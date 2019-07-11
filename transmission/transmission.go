@@ -43,6 +43,7 @@ func Add(uri string) error {
 
 	if sessionID == "" {
 		putSessionID(req)
+		return Add(uri)
 	}
 	req.Header.Set(sessionIDHeader, sessionID)
 
