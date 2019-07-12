@@ -21,29 +21,41 @@ type message struct {
 }
 
 type arguments struct {
-	Filename string `json:"filename"`
+	Filename    string `json:"filename"`
+	DownloadDir string `json:"download-dir,omitempty"`
 }
 
-// Add adds a torrent to transmission
-func Add(uri string) error {
+// Add adds a torrent to transmission.
+// If target is non-empty, the download will be stored there
+// instead of the default download location.
+func Add(uri, target string) error {
 	mes := message{
 		Method: "torrent-add",
 		Tag:    8,
 	}
 	mes.Filename = uri
+	mes.DownloadDir = target
+
 	body, err := json.Marshal(mes)
 	if err != nil {
 		return fmt.Errorf("adding %v: %v", uri, err)
 	}
 
+	return submit(body)
+}
+
+func submit(body []byte) error {
 	req, err := http.NewRequest("POST", rpc, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
 
 	if sessionID == "" {
-		putSessionID(req)
-		return Add(uri)
+		err := putSessionID(req)
+		if err != nil {
+			return err
+		}
+		return submit(body)
 	}
 	req.Header.Set(sessionIDHeader, sessionID)
 
