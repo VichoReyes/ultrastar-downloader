@@ -24,8 +24,14 @@ type message struct {
 }
 
 type arguments struct {
-	Filename    string `json:"filename,omitempty"`
-	DownloadDir string `json:"download-dir,omitempty"`
+	Filename    string    `json:"filename,omitempty"`
+	DownloadDir string    `json:"download-dir,omitempty"`
+	Fields      []string  `json:"fields,omitempty"`
+	Torrents    []torrent `json:"torrents,omitempty"`
+}
+
+type torrent struct {
+	Name string `json:"name"`
 }
 
 // Add adds a torrent to transmission.
@@ -53,6 +59,35 @@ func Add(uri, target string) error {
 	}
 	return nil
 }
+
+// List returns a set of all torrent names
+func List() (map[string]bool, error) {
+	req := message{
+		Method: "torrent-get",
+		Tag:    4,
+	}
+	req.Fields = []string{"name"}
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := submit(body)
+	if err != nil {
+		return nil, err
+	} else if response.Result != "success" {
+		resp, _ := json.MarshalIndent(response, "", "\t")
+		return nil, errors.New(string(resp))
+	}
+
+	ret := make(map[string]bool)
+	for _, t := range response.Torrents {
+		ret[t.Name] = true
+	}
+	return ret, nil
+}
+
 func submit(body []byte) (*message, error) {
 	req, err := http.NewRequest("POST", rpc, bytes.NewReader(body))
 	if err != nil {
