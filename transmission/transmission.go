@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 const rpc = "http://localhost:9091/transmission/rpc"
 const contentType = "application/x-www-form-urlencoded"
 const sessionIDHeader = "X-Transmission-Session-Id"
 
-var client http.Client
+var client = http.Client{Timeout: 10 * time.Second}
 var sessionID string
 
 type message struct {
