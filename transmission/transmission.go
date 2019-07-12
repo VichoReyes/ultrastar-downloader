@@ -3,6 +3,7 @@ package transmission
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -19,10 +20,11 @@ type message struct {
 	Method    string `json:"method"`
 	Tag       int    `json:"tag"`
 	arguments `json:"arguments"`
+	Result    string `json:"result,omitempty"`
 }
 
 type arguments struct {
-	Filename    string `json:"filename"`
+	Filename    string `json:"filename,omitempty"`
 	DownloadDir string `json:"download-dir,omitempty"`
 }
 
@@ -42,19 +44,25 @@ func Add(uri, target string) error {
 		return fmt.Errorf("adding %v: %v", uri, err)
 	}
 
-	return submit(body)
-}
-
-func submit(body []byte) error {
-	req, err := http.NewRequest("POST", rpc, bytes.NewReader(body))
+	response, err := submit(body)
 	if err != nil {
 		return err
+	} else if response.Result != "success" {
+		resp, _ := json.MarshalIndent(response, "", "\t")
+		return errors.New(string(resp))
+	}
+	return nil
+}
+func submit(body []byte) (*message, error) {
+	req, err := http.NewRequest("POST", rpc, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
 	}
 
 	if sessionID == "" {
 		err := putSessionID(req)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		return submit(body)
 	}
@@ -62,11 +70,17 @@ func submit(body []byte) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 
-	return nil
+	response := new(message)
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
 }
 
 func putSessionID(req *http.Request) error {
