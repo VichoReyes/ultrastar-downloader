@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 
 	"git.sr.ht/~vicentereyes/ultrastar/transmission"
 	"github.com/mmcdole/gofeed"
 )
 
 var target string
+var alreadyAdded map[string]bool
 
 func main() {
 	log.SetFlags(0)
@@ -31,12 +33,24 @@ func main() {
 	}
 	fmt.Println("RSS obtained successfully!")
 
+	alreadyAdded, err = transmission.List()
+	if err != nil {
+		log.Fatalf("Error: getting transmission state: %v", err)
+	}
+
 	for _, song := range feed.Items {
 		addTorrent(song)
 	}
 }
 
+var regex = regexp.MustCompile(`^(.*?) #`)
+
 func addTorrent(song *gofeed.Item) {
+	match := regex.FindStringSubmatch(song.Title)
+	if match != nil && alreadyAdded[match[1]] {
+		log.Printf("skipping %s: already added", match[1])
+		return
+	}
 	for _, enc := range song.Enclosures {
 		if enc.Type != "application/x-bittorrent" {
 			continue
