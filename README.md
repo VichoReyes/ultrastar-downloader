@@ -1,6 +1,6 @@
 # Ultrastar RSS adder
 
-This script will add all torrents from an [ultrastar-es.org] RSS feed to transmission, using its [RPC interface](https://github.com/transmission/transmission/blob/master/extras/rpc-spec.txt).
+This script will add all torrents from an <http://ultrastar-es.org> RSS feed to transmission, using its [RPC interface](https://github.com/transmission/transmission/blob/master/extras/rpc-spec.txt).
 
 ## Usage
 
