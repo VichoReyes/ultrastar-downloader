@@ -21,6 +21,12 @@ func main() {
 	}
 	target = os.Getenv("ULTRASTAR_TARGET")
 
+	var err error
+	alreadyAdded, err = transmission.List()
+	if err != nil {
+		log.Fatalf("Error: getting transmission state: %v", err)
+	}
+
 	fp := gofeed.NewParser()
 	feed, err := fp.ParseURL(url)
 	if err != nil {
@@ -32,11 +38,6 @@ func main() {
 		}
 	}
 	fmt.Println("RSS obtained successfully!")
-
-	alreadyAdded, err = transmission.List()
-	if err != nil {
-		log.Fatalf("Error: getting transmission state: %v", err)
-	}
 
 	for _, song := range feed.Items {
 		addTorrent(song)
